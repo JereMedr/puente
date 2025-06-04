@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/financial_service}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+# NOTA: En un entorno de producción, estas credenciales deberían estar en variables de entorno
+# y no en el código fuente. Se incluyen aquí solo con fines de demostración para la entrevista técnica.
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-256-bit-secret-key-here-for-demo-purposes-only}
+      expiration: 86400000 # 24 hours
+  alpha-vantage:
+    api-key: ${ALPHA_VANTAGE_API_KEY:demo}
+    base-url: https://www.alphavantage.co
+    cache:
+      duration: 300 # 5 minutes in seconds
+
+server:
+  port: 8080 

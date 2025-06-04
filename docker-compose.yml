@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "${APP_PORT}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:${DB_PORT}/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      APP_SECURITY_JWT_SECRET: ${JWT_SECRET}
+      APP_SECURITY_JWT_EXPIRATION: ${JWT_EXPIRATION}
+      APP_ALPHA_VANTAGE_API_KEY: ${ALPHA_VANTAGE_API_KEY}
+      APP_ALPHA_VANTAGE_BASE_URL: ${ALPHA_VANTAGE_BASE_URL}
+      APP_ALPHA_VANTAGE_CACHE_DURATION: ${ALPHA_VANTAGE_CACHE_DURATION}
+    depends_on:
+      - db
+
+volumes:
+  postgres_data: 

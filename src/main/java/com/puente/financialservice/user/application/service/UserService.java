@@ -4,6 +4,7 @@ import com.puente.financialservice.user.domain.model.User;
 import com.puente.financialservice.user.domain.port.UserRepository;
 import com.puente.financialservice.user.application.dto.UserDTO;
 import com.puente.financialservice.user.application.dto.UserRegistrationDTO;
+import com.puente.financialservice.user.application.dto.UserRoleUpdateDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,15 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
         return mapToDTO(savedUser);
+    }
+
+    public UserDTO updateUserRole(Long userId, UserRoleUpdateDTO roleUpdateDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setRole(roleUpdateDTO.getRole());
+        User updatedUser = userRepository.save(user);
+        return mapToDTO(updatedUser);
     }
 
     private UserDTO mapToDTO(User user) {

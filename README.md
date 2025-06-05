@@ -190,4 +190,170 @@ docker-compose up -d
 
 ## Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles. 
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## API Documentation
+
+### Authentication
+
+La API utiliza autenticación JWT. Para obtener un token, primero debes registrarte y luego iniciar sesión.
+
+#### Registro de Usuario
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "securePassword123"
+  }'
+```
+
+Respuesta:
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "role": "USER"
+}
+```
+
+#### Inicio de Sesión
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "securePassword123"
+  }'
+```
+
+Respuesta:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "type": "Bearer"
+}
+```
+
+### Instrumentos Financieros
+
+#### Obtener Lista de Instrumentos
+```bash
+curl -X GET http://localhost:8080/api/v1/instruments \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Respuesta:
+```json
+{
+  "content": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "type": "STOCK",
+      "currency": "USD",
+      "price": 150.25
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10
+  },
+  "totalElements": 1
+}
+```
+
+#### Buscar Instrumento por Símbolo
+```bash
+curl -X GET http://localhost:8080/api/v1/instruments/AAPL \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Respuesta:
+```json
+{
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "type": "STOCK",
+  "currency": "USD",
+  "price": 150.25
+}
+```
+
+### Gestión de Favoritos
+
+#### Agregar a Favoritos
+```bash
+curl -X POST http://localhost:8080/api/v1/favorites \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "AAPL"
+  }'
+```
+
+Respuesta:
+```json
+{
+  "id": 1,
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "type": "STOCK",
+  "currency": "USD",
+  "price": 150.25
+}
+```
+
+#### Listar Favoritos
+```bash
+curl -X GET http://localhost:8080/api/v1/favorites \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Respuesta:
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "type": "STOCK",
+      "currency": "USD",
+      "price": 150.25
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10
+  },
+  "totalElements": 1
+}
+```
+
+#### Eliminar de Favoritos
+```bash
+curl -X DELETE http://localhost:8080/api/v1/favorites/AAPL \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Notas Importantes
+
+1. **Autenticación**: Todas las peticiones (excepto registro y login) requieren el token JWT en el header `Authorization: Bearer YOUR_JWT_TOKEN`
+
+2. **Paginación**: Las listas de instrumentos y favoritos soportan paginación con los siguientes parámetros:
+   - `page`: Número de página (comienza en 0)
+   - `size`: Tamaño de la página
+   - `sort`: Campo por el cual ordenar
+
+   Ejemplo:
+   ```bash
+   curl -X GET "http://localhost:8080/api/v1/instruments?page=0&size=20&sort=symbol,asc" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN"
+   ```
+
+3. **Caché**: Las consultas de instrumentos financieros están cacheadas por 5 minutos para optimizar el rendimiento.
+
+4. **Límites de API**: La integración con Alpha Vantage tiene un límite de 5 llamadas por minuto y 500 por día en el plan gratuito. 

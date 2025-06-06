@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,33 +28,32 @@ public class AuthService {
     private String jwtSecret;
 
     @Value("${app.security.jwt.expiration}")
-    private long jwtExpiration;
+    private long expirationTime;
+
+    private Key getSigningKey() {
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
 
     public Map<String, String> login(UserRegistrationDTO loginDTO) {
         User user = userRepository.findByEmail(loginDTO.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new RuntimeException("Invalid email or password");
         }
 
-        String token = generateToken(user);
+        String token = Jwts.builder()
+                .setSubject(user.getEmail())
+                .claim("role", user.getRole().name())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(getSigningKey())
+                .compact();
 
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         response.put("type", "Bearer");
         return response;
-    }
-
-    private String generateToken(User user) {
-        Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        
-        return Jwts.builder()
-                .setSubject(user.getEmail())
-                .claim("role", user.getRole().name())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
     }
 } 

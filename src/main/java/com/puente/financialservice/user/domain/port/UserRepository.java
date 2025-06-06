@@ -11,4 +11,5 @@ public interface UserRepository {
     List<User> findAll();
     void deleteById(Long id);
     boolean existsByEmail(String email);
+    boolean existsById(Long id);
 } 

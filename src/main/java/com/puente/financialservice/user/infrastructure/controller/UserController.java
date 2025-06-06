@@ -2,6 +2,7 @@ package com.puente.financialservice.user.infrastructure.controller;
 
 import com.puente.financialservice.user.application.dto.UserDTO;
 import com.puente.financialservice.user.application.dto.UserRoleUpdateDTO;
+import com.puente.financialservice.user.application.dto.UserUpdateDTO;
 import com.puente.financialservice.user.application.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -20,6 +23,29 @@ public class UserController {
 
     private final UserService userService;
 
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all users", description = "Retrieves a list of all users (requires ADMIN role)")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get user by ID", description = "Retrieves a user by their ID (requires ADMIN role)")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserById(userId));
+    }
+
+    @PutMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update user", description = "Updates a user's information (requires ADMIN role)")
+    public ResponseEntity<UserDTO> updateUser(
+            @PathVariable Long userId,
+            @RequestBody UserUpdateDTO updateDTO) {
+        return ResponseEntity.ok(userService.updateUser(userId, updateDTO));
+    }
+
     @PutMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update user role", description = "Updates the role of a user (requires ADMIN role)")
@@ -27,5 +53,13 @@ public class UserController {
             @PathVariable Long userId,
             @RequestBody UserRoleUpdateDTO roleUpdateDTO) {
         return ResponseEntity.ok(userService.updateUserRole(userId, roleUpdateDTO));
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete user", description = "Deletes a user (requires ADMIN role)")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+        userService.deleteUser(userId);
+        return ResponseEntity.noContent().build();
     }
 } 

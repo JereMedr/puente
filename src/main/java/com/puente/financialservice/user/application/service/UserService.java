@@ -5,9 +5,13 @@ import com.puente.financialservice.user.domain.port.UserRepository;
 import com.puente.financialservice.user.application.dto.UserDTO;
 import com.puente.financialservice.user.application.dto.UserRegistrationDTO;
 import com.puente.financialservice.user.application.dto.UserRoleUpdateDTO;
+import com.puente.financialservice.user.application.dto.UserUpdateDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -35,6 +39,40 @@ public class UserService {
         return mapToDTO(savedUser);
     }
 
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public UserDTO getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return mapToDTO(user);
+    }
+
+    public UserDTO updateUser(Long userId, UserUpdateDTO updateDTO) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (updateDTO.getName() != null) {
+            user.setName(updateDTO.getName());
+        }
+        if (updateDTO.getEmail() != null) {
+            if (!user.getEmail().equals(updateDTO.getEmail()) && 
+                userRepository.existsByEmail(updateDTO.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+            user.setEmail(updateDTO.getEmail());
+        }
+        if (updateDTO.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(updateDTO.getPassword()));
+        }
+
+        User updatedUser = userRepository.save(user);
+        return mapToDTO(updatedUser);
+    }
+
     public UserDTO updateUserRole(Long userId, UserRoleUpdateDTO roleUpdateDTO) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -42,6 +80,13 @@ public class UserService {
         user.setRole(roleUpdateDTO.getRole());
         User updatedUser = userRepository.save(user);
         return mapToDTO(updatedUser);
+    }
+
+    public void deleteUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found");
+        }
+        userRepository.deleteById(userId);
     }
 
     private UserDTO mapToDTO(User user) {

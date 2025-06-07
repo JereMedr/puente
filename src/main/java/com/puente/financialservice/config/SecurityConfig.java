@@ -35,7 +35,7 @@ public class SecurityConfig {
             .csrf().disable()
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", "/actuator/health").permitAll()
-                .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/users/**").authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement()

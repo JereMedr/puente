@@ -1,5 +1,7 @@
 package com.puente.financialservice.user.infrastructure.security;
 
+import com.puente.financialservice.user.domain.model.User;
+import com.puente.financialservice.user.domain.port.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -24,6 +26,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Value("${app.security.jwt.secret}")
     private String jwtSecret;
+
+    private final UserRepository userRepository;
+
+    public JwtAuthenticationFilter(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     private Key getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
@@ -53,8 +61,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
 
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    email,
+                    user,
                     null,
                     List.of(new SimpleGrantedAuthority("ROLE_" + role))
             );

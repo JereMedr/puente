@@ -6,6 +6,7 @@ import com.puente.financialservice.user.application.dto.UserDTO;
 import com.puente.financialservice.user.application.dto.UserRegistrationDTO;
 import com.puente.financialservice.user.application.dto.UserRoleUpdateDTO;
 import com.puente.financialservice.user.application.dto.UserUpdateDTO;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,14 @@ public class UserService {
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    public boolean isCurrentUser(Long userId, Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            return false;
+        }
+        User currentUser = (User) authentication.getPrincipal();
+        return currentUser.getId().equals(userId);
     }
 
     public UserDTO registerUser(UserRegistrationDTO registrationDTO) {
@@ -51,8 +60,36 @@ public class UserService {
         return mapToDTO(user);
     }
 
+    public UserDTO getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return mapToDTO(user);
+    }
+
     public UserDTO updateUser(Long userId, UserUpdateDTO updateDTO) {
         User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (updateDTO.getName() != null) {
+            user.setName(updateDTO.getName());
+        }
+        if (updateDTO.getEmail() != null) {
+            if (!user.getEmail().equals(updateDTO.getEmail()) && 
+                userRepository.existsByEmail(updateDTO.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+            user.setEmail(updateDTO.getEmail());
+        }
+        if (updateDTO.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(updateDTO.getPassword()));
+        }
+
+        User updatedUser = userRepository.save(user);
+        return mapToDTO(updatedUser);
+    }
+
+    public UserDTO updateUserByEmail(String email, UserUpdateDTO updateDTO) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (updateDTO.getName() != null) {
@@ -87,6 +124,12 @@ public class UserService {
             throw new RuntimeException("User not found");
         }
         userRepository.deleteById(userId);
+    }
+
+    public void deleteUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository.deleteById(user.getId());
     }
 
     private UserDTO mapToDTO(User user) {

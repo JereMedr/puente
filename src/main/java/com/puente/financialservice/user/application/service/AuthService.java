@@ -1,5 +1,6 @@
 package com.puente.financialservice.user.application.service;
 
+import com.puente.financialservice.user.application.dto.LoginDTO;
 import com.puente.financialservice.user.application.dto.UserRegistrationDTO;
 import com.puente.financialservice.user.domain.model.User;
 import com.puente.financialservice.user.domain.port.UserRepository;
@@ -35,7 +36,7 @@ public class AuthService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public Map<String, String> login(UserRegistrationDTO loginDTO) {
+    public Map<String, String> login(LoginDTO loginDTO) {
         User user = userRepository.findByEmail(loginDTO.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
@@ -46,6 +47,7 @@ public class AuthService {
         String token = Jwts.builder()
                 .setSubject(user.getEmail())
                 .claim("role", user.getRole().name())
+                .claim("userId", user.getId())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey())

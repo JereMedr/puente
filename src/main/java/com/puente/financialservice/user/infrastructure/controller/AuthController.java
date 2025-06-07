@@ -1,5 +1,6 @@
 package com.puente.financialservice.user.infrastructure.controller;
 
+import com.puente.financialservice.user.application.dto.LoginDTO;
 import com.puente.financialservice.user.application.dto.UserDTO;
 import com.puente.financialservice.user.application.dto.UserRegistrationDTO;
 import com.puente.financialservice.user.application.service.AuthService;
@@ -29,7 +30,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Login user", description = "Authenticates a user and returns a JWT token")
-    public ResponseEntity<Map<String, String>> login(@RequestBody UserRegistrationDTO loginDTO) {
+    public ResponseEntity<Map<String, String>> login(@RequestBody LoginDTO loginDTO) {
         return ResponseEntity.ok(authService.login(loginDTO));
     }
 } 

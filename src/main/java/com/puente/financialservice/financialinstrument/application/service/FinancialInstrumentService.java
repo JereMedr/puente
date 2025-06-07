@@ -34,6 +34,37 @@ public class FinancialInstrumentService {
                 .orElseThrow(() -> new RuntimeException("Instrument not found"));
     }
 
+    public FinancialInstrumentDTO updateInstrumentData(String symbol) {
+        FinancialInstrument instrument = repository.findBySymbol(symbol)
+                .orElseThrow(() -> new RuntimeException("Instrument not found"));
+
+        externalService.getInstrumentData(symbol)
+                .ifPresent(updatedData -> {
+                    instrument.setCurrentPrice(updatedData.getCurrentPrice());
+                    instrument.setPreviousClose(updatedData.getPreviousClose());
+                    instrument.setChange(updatedData.getChange());
+                    instrument.setChangePercent(updatedData.getChangePercent());
+                    instrument.setLastUpdated(updatedData.getLastUpdated());
+                    repository.save(instrument);
+                });
+
+        return mapToDTO(instrument);
+    }
+
+    public void syncAllInstruments() {
+        repository.findAll().forEach(instrument -> {
+            externalService.getInstrumentData(instrument.getSymbol())
+                    .ifPresent(updatedData -> {
+                        instrument.setCurrentPrice(updatedData.getCurrentPrice());
+                        instrument.setPreviousClose(updatedData.getPreviousClose());
+                        instrument.setChange(updatedData.getChange());
+                        instrument.setChangePercent(updatedData.getChangePercent());
+                        instrument.setLastUpdated(updatedData.getLastUpdated());
+                        repository.save(instrument);
+                    });
+        });
+    }
+
     private FinancialInstrumentDTO mapToDTO(FinancialInstrument instrument) {
         return new FinancialInstrumentDTO(
             instrument.getSymbol(),

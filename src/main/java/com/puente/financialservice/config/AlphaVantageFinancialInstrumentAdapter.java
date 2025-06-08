@@ -2,6 +2,8 @@ package com.puente.financialservice.config;
 
 import com.puente.financialservice.financialinstrument.domain.FinancialInstrument;
 import com.puente.financialservice.financialinstrument.domain.port.FinancialInstrumentExternalService;
+import com.puente.financialservice.financialinstrument.infrastructure.dto.AlphaVantageResponse;
+import com.puente.financialservice.financialinstrument.infrastructure.dto.GlobalQuote;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -62,66 +64,5 @@ public class AlphaVantageFinancialInstrumentAdapter implements FinancialInstrume
             new BigDecimal(quote.getChangePercent().replace("%", "")),
             LocalDateTime.now()
         );
-    }
-
-    // Clases internas para mapear la respuesta de Alpha Vantage
-    private static class AlphaVantageResponse {
-        private GlobalQuote globalQuote;
-
-        public GlobalQuote getGlobalQuote() {
-            return globalQuote;
-        }
-
-        public void setGlobalQuote(GlobalQuote globalQuote) {
-            this.globalQuote = globalQuote;
-        }
-    }
-
-    private static class GlobalQuote {
-        private String symbol;
-        private String price;
-        private String previousClose;
-        private String change;
-        private String changePercent;
-
-        public String getSymbol() {
-            return symbol;
-        }
-
-        public void setSymbol(String symbol) {
-            this.symbol = symbol;
-        }
-
-        public String getPrice() {
-            return price;
-        }
-
-        public void setPrice(String price) {
-            this.price = price;
-        }
-
-        public String getPreviousClose() {
-            return previousClose;
-        }
-
-        public void setPreviousClose(String previousClose) {
-            this.previousClose = previousClose;
-        }
-
-        public String getChange() {
-            return change;
-        }
-
-        public void setChange(String change) {
-            this.change = change;
-        }
-
-        public String getChangePercent() {
-            return changePercent;
-        }
-
-        public void setChangePercent(String changePercent) {
-            this.changePercent = changePercent;
-        }
     }
 } 

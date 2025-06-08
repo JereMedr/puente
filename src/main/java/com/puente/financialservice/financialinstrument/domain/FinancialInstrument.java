@@ -1,17 +1,18 @@
-package com.puente.financialservice.financialinstrument.domain.model;
+package com.puente.financialservice.financialinstrument.domain;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Data
 @Entity
 @Table(name = "financial_instruments")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FinancialInstrument {

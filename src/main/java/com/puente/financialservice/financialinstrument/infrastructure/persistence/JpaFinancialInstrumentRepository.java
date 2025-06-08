@@ -1,6 +1,6 @@
 package com.puente.financialservice.financialinstrument.infrastructure.persistence;
 
-import com.puente.financialservice.financialinstrument.domain.model.FinancialInstrument;
+import com.puente.financialservice.financialinstrument.domain.FinancialInstrument;
 import com.puente.financialservice.financialinstrument.domain.port.FinancialInstrumentRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

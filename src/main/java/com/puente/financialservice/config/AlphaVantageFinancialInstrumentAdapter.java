@@ -1,6 +1,6 @@
 package com.puente.financialservice.config;
 
-import com.puente.financialservice.financialinstrument.domain.model.FinancialInstrument;
+import com.puente.financialservice.financialinstrument.domain.FinancialInstrument;
 import com.puente.financialservice.financialinstrument.domain.port.FinancialInstrumentExternalService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

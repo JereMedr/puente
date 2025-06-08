@@ -1,6 +1,6 @@
 package com.puente.financialservice.financialinstrument.infrastructure.service;
 
-import com.puente.financialservice.financialinstrument.domain.model.FinancialInstrument;
+import com.puente.financialservice.financialinstrument.domain.FinancialInstrument;
 import com.puente.financialservice.financialinstrument.infrastructure.config.PredefinedSymbols;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;

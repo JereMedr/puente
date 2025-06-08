@@ -37,6 +37,26 @@ public class AlphaVantageApiClient {
         this.apiKey = apiKey;
         this.rateLimitService = rateLimitService;
         this.mapper = mapper;
+        
+        // Detailed logging for debugging configuration issues
+        logger.info("🔧 AlphaVantageApiClient Configuration Debug:");
+        logger.info("🌐 Base URL: {}", baseUrl);
+        
+        // Log API key configuration (mask for security)
+        String maskedApiKey = apiKey != null && apiKey.length() > 4 ? 
+            apiKey.substring(0, 4) + "***" + apiKey.substring(apiKey.length() - 4) : 
+            "***INVALID***";
+        logger.info("🔑 API Key loaded: {}", maskedApiKey);
+        
+        // Check if we're getting the default value
+        if ("demo".equals(apiKey)) {
+            logger.error("❌ CONFIGURATION PROBLEM: API key is 'demo' - property 'app.alpha-vantage.api-key' not found or not loaded!");
+            logger.error("🔍 This means the application.properties value is not being read correctly.");
+        } else if (apiKey == null || apiKey.trim().isEmpty()) {
+            logger.error("❌ CONFIGURATION PROBLEM: API key is null or empty!");
+        } else {
+            logger.info("✅ API key loaded successfully from properties");
+        }
     }
 
     @Cacheable(value = "financialInstruments", key = "#symbol")
@@ -45,35 +65,60 @@ public class AlphaVantageApiClient {
             rateLimitService.checkApiLimits();
             
             String url = buildApiUrl(symbol);
-            logger.info("Fetching data for symbol: {}", symbol);
+            logger.info("🌐 Making API call to URL: {}", url);
             
+            // First, get the raw response as String to see what we're getting
+            String rawResponse = restTemplate.getForObject(url, String.class);
+            logger.info("📦 Raw API Response for {}: {}", symbol, rawResponse);
+            
+            // Now try to parse it as our DTO
             AlphaVantageResponse response = restTemplate.getForObject(url, AlphaVantageResponse.class);
+            logger.info("🔍 Parsed response object: {}", response != null ? "NOT NULL" : "NULL");
             
-            if (isValidResponse(response)) {
+            if (response != null && response.getGlobalQuote() != null) {
+                logger.info("✅ GlobalQuote found: {}", response.getGlobalQuote());
+                logger.info("📊 GlobalQuote details - Symbol: {}, Price: {}, Change: {}", 
+                    response.getGlobalQuote().getSymbol(),
+                    response.getGlobalQuote().getPrice(),
+                    response.getGlobalQuote().getChange());
+                    
                 FinancialInstrument instrument = mapper.mapFromGlobalQuote(symbol, response.getGlobalQuote());
-                logger.info("Successfully fetched data for symbol: {}", symbol);
+                logger.info("💰 Successfully mapped instrument for {}: price={}", symbol, instrument.getCurrentPrice());
                 return Optional.of(instrument);
+            } else {
+                if (response == null) {
+                    logger.error("❌ Response object is NULL for symbol: {}", symbol);
+                } else {
+                    logger.error("❌ GlobalQuote is NULL in response for symbol: {}", symbol);
+                }
+                return Optional.empty();
             }
             
-            logger.warn("No data found for symbol: {}", symbol);
-            return Optional.empty();
-            
         } catch (HttpClientErrorException e) {
+            logger.error("🔴 HTTP Error for {}: status={}, body={}", symbol, e.getStatusCode(), e.getResponseBodyAsString());
             handleHttpError(symbol, e);
             return Optional.empty();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            logger.error("Rate limit wait interrupted for symbol {}", symbol);
+            logger.error("⏸️ Rate limit wait interrupted for symbol {}", symbol);
             return Optional.empty();
         } catch (Exception e) {
-            logger.error("Error fetching data for symbol {}: {}", symbol, e.getMessage());
+            logger.error("💥 Unexpected error for {}: {}", symbol, e.getMessage(), e);
             return Optional.empty();
         }
     }
 
     private String buildApiUrl(String symbol) {
-        return String.format("%s/query?function=GLOBAL_QUOTE&symbol=%s&apikey=%s",
+        String url = String.format("%s/query?function=GLOBAL_QUOTE&symbol=%s&apikey=%s",
                 baseUrl, symbol, apiKey);
+        
+        // Debug logging to see what API key is actually being used
+        String maskedApiKey = apiKey != null && apiKey.length() > 4 ? 
+            apiKey.substring(0, 4) + "***" + apiKey.substring(apiKey.length() - 4) : 
+            "***INVALID***";
+        logger.debug("🔧 Building URL with API key: {}", maskedApiKey);
+        
+        return url;
     }
 
     private boolean isValidResponse(AlphaVantageResponse response) {

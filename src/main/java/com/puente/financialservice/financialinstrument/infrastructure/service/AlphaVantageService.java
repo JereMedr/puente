@@ -92,4 +92,16 @@ public class AlphaVantageService {
     public void clearCache() {
         cacheService.clearCache();
     }
+
+    public java.time.LocalDateTime getLastUpdateTime() {
+        return cacheService.getLastUpdateTime();
+    }
+
+    public int getCacheSize() {
+        return cacheService.getCacheSize();
+    }
+
+    public Optional<FinancialInstrument> getCachedInstrument(String symbol) {
+        return cacheService.getFromCache(symbol);
+    }
 } 

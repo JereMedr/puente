@@ -245,6 +245,70 @@ public class FinancialInstrumentController {
         return ResponseEntity.ok(config);
     }
 
+    @GetMapping("/scheduler-status")
+    @Operation(summary = "Get scheduler status", description = "Shows scheduler status, last update time, and cache information")
+    public ResponseEntity<java.util.Map<String, Object>> getSchedulerStatus() {
+        logger.info("🌐 ENDPOINT CALLED: GET /api/v1/instruments/scheduler-status - Get scheduler monitoring info");
+        logger.info("📊 Checking scheduler status...");
+        
+        java.util.Map<String, Object> status = new java.util.HashMap<>();
+        
+        try {
+            // Get cache information
+            java.time.LocalDateTime lastUpdate = alphaVantageService.getLastUpdateTime();
+            int cacheSize = alphaVantageService.getCacheSize();
+            
+            status.put("schedulerEnabled", true);
+            status.put("lastUpdateTime", lastUpdate != null ? lastUpdate.toString() : "Never");
+            status.put("cacheSize", cacheSize);
+            status.put("totalSymbols", com.puente.financialservice.financialinstrument.infrastructure.config.PredefinedSymbols.SYMBOLS.size());
+            status.put("updateInterval", "5 minutes");
+            status.put("symbolsPerCycle", 4);
+            status.put("estimatedFullCycleDuration", "25 minutes");
+            
+            // Calculate next expected update (approximately)
+            if (lastUpdate != null) {
+                java.time.LocalDateTime nextUpdate = lastUpdate.plusMinutes(5);
+                status.put("nextUpdateTime", nextUpdate.toString());
+                status.put("minutesUntilNextUpdate", 
+                    java.time.Duration.between(java.time.LocalDateTime.now(), nextUpdate).toMinutes());
+            }
+            
+            // Get symbols with cached data
+            java.util.List<String> symbolsWithData = new java.util.ArrayList<>();
+            java.util.List<String> symbolsWithRealPrices = new java.util.ArrayList<>();
+            
+            for (String symbol : com.puente.financialservice.financialinstrument.infrastructure.config.PredefinedSymbols.SYMBOLS) {
+                java.util.Optional<com.puente.financialservice.financialinstrument.domain.FinancialInstrument> cached = 
+                    alphaVantageService.getCachedInstrument(symbol);
+                if (cached.isPresent()) {
+                    symbolsWithData.add(symbol);
+                    if (cached.get().getCurrentPrice().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                        symbolsWithRealPrices.add(symbol);
+                    }
+                }
+            }
+            
+            status.put("symbolsWithCachedData", symbolsWithData);
+            status.put("symbolsWithRealPrices", symbolsWithRealPrices);
+            status.put("realDataPercentage", symbolsWithData.isEmpty() ? 0 : 
+                (symbolsWithRealPrices.size() * 100) / symbolsWithData.size());
+            
+            status.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            logger.info("✅ ENDPOINT SUCCESS: GET /api/v1/instruments/scheduler-status - Status retrieved: {} cached, {} with real prices", 
+                symbolsWithData.size(), symbolsWithRealPrices.size());
+            
+            return ResponseEntity.ok(status);
+            
+        } catch (Exception e) {
+            logger.error("💥 ENDPOINT ERROR: GET /api/v1/instruments/scheduler-status - Error: {}", e.getMessage(), e);
+            status.put("error", "Failed to get scheduler status: " + e.getMessage());
+            status.put("timestamp", java.time.LocalDateTime.now().toString());
+            return ResponseEntity.ok(status);
+        }
+    }
+
     // Debug response DTO
     public static class DebugResponse {
         private String symbol;

@@ -4,7 +4,6 @@ import com.puente.financialservice.financialinstrument.domain.FinancialInstrumen
 import com.puente.financialservice.financialinstrument.infrastructure.client.AlphaVantageApiClient;
 import com.puente.financialservice.financialinstrument.infrastructure.config.PredefinedSymbols;
 import com.puente.financialservice.financialinstrument.infrastructure.mapper.FinancialInstrumentMapper;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import java.util.Optional;
 
 @Service
 public class AlphaVantageService {
-    
     private static final Logger logger = LoggerFactory.getLogger(AlphaVantageService.class);
     
     private final AlphaVantageApiClient apiClient;
@@ -31,33 +29,27 @@ public class AlphaVantageService {
         this.mapper = mapper;
     }
 
-    @PostConstruct
-    public void init() {
-        logger.info("Initializing AlphaVantageService - Cache size: {}", cacheService.getCacheSize());
-    }
-
     public Optional<FinancialInstrument> getInstrumentData(String symbol) {
-        logger.info("🎯 Getting instrument data for symbol: {}", symbol);
+        logger.info("🔍 Getting instrument data for symbol: {}", symbol);
         
         // First try to get from cache
-        Optional<FinancialInstrument> cachedInstrument = cacheService.getFromCache(symbol);
-        if (cachedInstrument.isPresent()) {
-            FinancialInstrument cached = cachedInstrument.get();
-            boolean hasRealData = cached.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0;
+        Optional<FinancialInstrument> cached = cacheService.getFromCache(symbol);
+        if (cached.isPresent()) {
+            FinancialInstrument instrument = cached.get();
+            boolean hasRealData = instrument.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0;
             
             if (hasRealData) {
-                logger.info("📥 Found valid cached data for symbol: {} - price: {}", 
-                    symbol, cached.getCurrentPrice());
-                return cachedInstrument;
+                logger.info("✅ Found REAL data in cache for {}: price={}", 
+                    symbol, instrument.getCurrentPrice());
+                return cached;
             } else {
-                logger.warn("📥 Found cached data for {} but it's dummy data (price=0), will try API", symbol);
-                // Don't return dummy data, try API instead
+                logger.info("⚠️ Found cached data for {} but price is 0, will try API", symbol);
             }
+        } else {
+            logger.info("🔍 No cache entry found for {}, will try API", symbol);
         }
-
-        logger.info("🚀 No valid cached data found for {}, fetching from API...", symbol);
         
-        // If not in cache or dummy data, fetch from API
+        // If not in cache or cached data is empty, try to fetch from API
         Optional<FinancialInstrument> fetchedInstrument = apiClient.fetchInstrumentData(symbol);
         
         if (fetchedInstrument.isPresent()) {
@@ -91,17 +83,5 @@ public class AlphaVantageService {
 
     public void clearCache() {
         cacheService.clearCache();
-    }
-
-    public java.time.LocalDateTime getLastUpdateTime() {
-        return cacheService.getLastUpdateTime();
-    }
-
-    public int getCacheSize() {
-        return cacheService.getCacheSize();
-    }
-
-    public Optional<FinancialInstrument> getCachedInstrument(String symbol) {
-        return cacheService.getFromCache(symbol);
     }
 } 

@@ -8,7 +8,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,8 +17,6 @@ import java.util.stream.Collectors;
 public class FinancialInstrumentCacheService {
     
     private static final Logger logger = LoggerFactory.getLogger(FinancialInstrumentCacheService.class);
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    
     private final ConcurrentHashMap<String, FinancialInstrument> instrumentCache = new ConcurrentHashMap<>();
     private LocalDateTime lastUpdateTime = LocalDateTime.now();
 
@@ -33,8 +30,6 @@ public class FinancialInstrumentCacheService {
     }
 
     public List<FinancialInstrument> getCachedInstruments(List<String> symbols, FinancialInstrumentMapper mapper) {
-        logger.info("Getting cached instruments. Last update: {}", lastUpdateTime.format(formatter));
-        
         return symbols.stream()
                 .map(symbol -> instrumentCache.getOrDefault(symbol, mapper.createEmptyInstrument(symbol)))
                 .collect(Collectors.toList());
@@ -43,15 +38,12 @@ public class FinancialInstrumentCacheService {
     @CacheEvict(value = "financialInstruments", allEntries = true)
     public void clearCache() {
         instrumentCache.clear();
-        logger.info("Cache cleared at {}", LocalDateTime.now().format(formatter));
+        logger.info("Cache cleared");
     }
 
     public void updateLastUpdateTime() {
         this.lastUpdateTime = LocalDateTime.now();
-    }
-
-    public LocalDateTime getLastUpdateTime() {
-        return lastUpdateTime;
+        logger.debug("Cache last update time updated to: {}", lastUpdateTime);
     }
 
     public int getCacheSize() {

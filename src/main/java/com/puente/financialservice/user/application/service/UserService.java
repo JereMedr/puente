@@ -6,6 +6,8 @@ import com.puente.financialservice.user.application.dto.UserDTO;
 import com.puente.financialservice.user.application.dto.UserRegistrationDTO;
 import com.puente.financialservice.user.application.dto.UserRoleUpdateDTO;
 import com.puente.financialservice.user.application.dto.UserUpdateDTO;
+import com.puente.financialservice.favorite.domain.port.FavoriteRepository;
+import com.puente.financialservice.favorite.domain.model.Favorite;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +27,12 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final FavoriteRepository favoriteRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, FavoriteRepository favoriteRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.favoriteRepository = favoriteRepository;
     }
 
     @PostConstruct
@@ -318,24 +322,31 @@ public class UserService {
         logger.info("🗑️  DELETE USER request: ID={}", userId);
         
         try {
-            if (!userRepository.existsById(userId)) {
-                logger.warn("❌ User not found for deletion: ID={}", userId);
-                throw new RuntimeException("User not found");
+            User userToDelete = userRepository.findById(userId)
+                    .orElseThrow(() -> {
+                        logger.warn("❌ User not found for deletion: ID={}", userId);
+                        return new RuntimeException("User not found");
+                    });
+            
+            logger.info("⚠️  About to delete user: Name={}, Email={}, Role={}", 
+                userToDelete.getName(), userToDelete.getEmail(), userToDelete.getRole());
+
+            // Obtener y eliminar todos los favoritos del usuario
+            List<Favorite> userFavorites = favoriteRepository.findAllByUser(userToDelete);
+            logger.info("📊 Found {} favorites to delete for user ID={}", userFavorites.size(), userId);
+
+            for (Favorite favorite : userFavorites) {
+                logger.info("🗑️  Deleting favorite: Symbol={} for user={}", favorite.getSymbol(), userToDelete.getEmail());
+                favoriteRepository.delete(favorite);
             }
             
-            // Get user info before deletion for logging
-            User userToDelete = userRepository.findById(userId).orElse(null);
-            if (userToDelete != null) {
-                logger.info("⚠️  About to delete user: Name={}, Email={}, Role={}", 
-                    userToDelete.getName(), userToDelete.getEmail(), userToDelete.getRole());
-            }
+            logger.info("✅ All favorites deleted for user ID={}", userId);
             
+            // Ahora sí eliminamos el usuario
             userRepository.deleteById(userId);
             
             logger.info("✅ User deleted successfully: ID={}", userId);
-            if (userToDelete != null) {
-                logger.info("🎯 Deleted user was: {}", userToDelete.getEmail());
-            }
+            logger.info("🎯 Deleted user was: {}", userToDelete.getEmail());
             
         } catch (Exception e) {
             logger.error("❌ Failed to delete user ID {}: {}", userId, e.getMessage());

@@ -44,8 +44,14 @@ public class UserController {
             
             return ResponseEntity.ok(users);
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: GET /api/v1/users - Access denied: {}", e.getMessage());
+            logger.error("🔍 Security details: User might not have ADMIN role");
+            throw e;
         } catch (Exception e) {
             logger.error("❌ ENDPOINT ERROR: GET /api/v1/users - Failed to retrieve users: {}", e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }
@@ -67,8 +73,18 @@ public class UserController {
             
             return ResponseEntity.ok(userDTO);
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: GET /api/v1/users/me - Authentication failed: {}", e.getMessage());
+            logger.error("🔍 Security details: Invalid or expired token");
+            throw e;
+        } catch (RuntimeException e) {
+            logger.error("❌ ENDPOINT RUNTIME ERROR: GET /api/v1/users/me - User not found or data error: {}", e.getMessage());
+            logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
+            throw e;
         } catch (Exception e) {
             logger.error("❌ ENDPOINT ERROR: GET /api/v1/users/me - Failed to get user info: {}", e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }
@@ -88,8 +104,23 @@ public class UserController {
             
             return ResponseEntity.ok(user);
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: GET /api/v1/users/{} - Access denied: {}", userId, e.getMessage());
+            logger.error("🔍 Security details: User might not have permission to view user {}", userId);
+            throw e;
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("User not found")) {
+                logger.error("👤 ENDPOINT NOT_FOUND ERROR: GET /api/v1/users/{} - User does not exist", userId);
+                logger.error("🔍 Database search failed for user ID: {}", userId);
+            } else {
+                logger.error("❌ ENDPOINT RUNTIME ERROR: GET /api/v1/users/{} - Runtime error: {}", userId, e.getMessage());
+                logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
+            }
+            throw e;
         } catch (Exception e) {
             logger.error("❌ ENDPOINT ERROR: GET /api/v1/users/{} - Failed to get user: {}", userId, e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }
@@ -116,8 +147,26 @@ public class UserController {
             
             return ResponseEntity.ok(updatedUser);
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: PUT /api/v1/users/me - Authentication failed: {}", e.getMessage());
+            logger.error("🔍 Security details: User authentication invalid");
+            throw e;
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("Email already exists")) {
+                logger.error("📧 ENDPOINT VALIDATION ERROR: PUT /api/v1/users/me - Email conflict: {}", updateDTO.getEmail());
+                logger.error("🔍 Attempted to change to existing email: {}", updateDTO.getEmail());
+            } else if (e.getMessage().contains("User not found")) {
+                logger.error("👤 ENDPOINT NOT_FOUND ERROR: PUT /api/v1/users/me - User no longer exists");
+                logger.error("🔍 User ID {} not found in database", user.getId());
+            } else {
+                logger.error("❌ ENDPOINT RUNTIME ERROR: PUT /api/v1/users/me - Runtime error: {}", e.getMessage());
+                logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
+            }
+            throw e;
         } catch (Exception e) {
             logger.error("❌ ENDPOINT ERROR: PUT /api/v1/users/me - Profile update failed: {}", e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }
@@ -143,19 +192,40 @@ public class UserController {
             
             return ResponseEntity.ok(updatedUser);
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: PUT /api/v1/users/{} - Access denied: {}", userId, e.getMessage());
+            logger.error("🔍 Security details: User might not have permission to update user {}", userId);
+            throw e;
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("Email already exists")) {
+                logger.error("📧 ENDPOINT VALIDATION ERROR: PUT /api/v1/users/{} - Email conflict: {}", userId, updateDTO.getEmail());
+                logger.error("🔍 Attempted to change to existing email: {}", updateDTO.getEmail());
+            } else if (e.getMessage().contains("User not found")) {
+                logger.error("👤 ENDPOINT NOT_FOUND ERROR: PUT /api/v1/users/{} - User does not exist", userId);
+                logger.error("🔍 Database search failed for user ID: {}", userId);
+            } else {
+                logger.error("❌ ENDPOINT RUNTIME ERROR: PUT /api/v1/users/{} - Runtime error: {}", userId, e.getMessage());
+                logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
+            }
+            throw e;
         } catch (Exception e) {
             logger.error("❌ ENDPOINT ERROR: PUT /api/v1/users/{} - Update failed: {}", userId, e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }
 
     @PutMapping("/{userId}/role")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update user role", description = "Updates the role of a user (requires ADMIN role)")
+    @Operation(summary = "Update user role", description = "Updates the role of a user (any authenticated user)")
     public ResponseEntity<UserDTO> updateUserRole(
             @PathVariable Long userId,
-            @RequestBody UserRoleUpdateDTO roleUpdateDTO) {
-        logger.info("🌐 ENDPOINT CALLED: PUT /api/v1/users/{}/role - Update user role (ADMIN only)", userId);
+            @RequestBody UserRoleUpdateDTO roleUpdateDTO,
+            Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        
+        logger.info("🌐 ENDPOINT CALLED: PUT /api/v1/users/{}/role - Update user role", userId);
+        logger.info("👤 Requested by: {} (ID: {}, Role: {})", currentUser.getEmail(), currentUser.getId(), currentUser.getRole());
         logger.info("🏷️  Role change for user {}: New role = {}", userId, roleUpdateDTO.getRole());
         
         try {
@@ -166,8 +236,31 @@ public class UserController {
             
             return ResponseEntity.ok(updatedUser);
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: PUT /api/v1/users/{}/role - Authentication failed: {}", userId, e.getMessage());
+            logger.error("🔍 Security details: User authentication invalid");
+            logger.error("👤 Attempted by: {} (ID: {})", currentUser.getEmail(), currentUser.getId());
+            throw e;
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("User not found")) {
+                logger.error("👤 ENDPOINT NOT_FOUND ERROR: PUT /api/v1/users/{}/role - Target user does not exist", userId);
+                logger.error("🔍 Database search failed for user ID: {}", userId);
+                logger.error("👤 Attempted by: {} (ID: {})", currentUser.getEmail(), currentUser.getId());
+            } else if (e.getMessage().contains("Invalid role")) {
+                logger.error("🏷️  ENDPOINT VALIDATION ERROR: PUT /api/v1/users/{}/role - Invalid role: {}", userId, roleUpdateDTO.getRole());
+                logger.error("🔍 Attempted to set invalid role: {}", roleUpdateDTO.getRole());
+                logger.error("👤 Attempted by: {} (ID: {})", currentUser.getEmail(), currentUser.getId());
+            } else {
+                logger.error("❌ ENDPOINT RUNTIME ERROR: PUT /api/v1/users/{}/role - Runtime error: {}", userId, e.getMessage());
+                logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
+                logger.error("👤 Attempted by: {} (ID: {})", currentUser.getEmail(), currentUser.getId());
+            }
+            throw e;
         } catch (Exception e) {
             logger.error("❌ ENDPOINT ERROR: PUT /api/v1/users/{}/role - Role update failed: {}", userId, e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("👤 Attempted by: {} (ID: {})", currentUser.getEmail(), currentUser.getId());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }

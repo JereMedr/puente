@@ -8,6 +8,8 @@ import com.puente.financialservice.user.domain.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,61 +127,32 @@ public class UserController {
         }
     }
 
-    @PutMapping("/me")
-    @Operation(summary = "Update current user", description = "Updates the current user's information")
-    public ResponseEntity<UserDTO> updateCurrentUser(
-            Authentication authentication,
-            @RequestBody UserUpdateDTO updateDTO) {
-        User user = (User) authentication.getPrincipal();
-        
-        logger.info("🌐 ENDPOINT CALLED: PUT /api/v1/users/me - Update current user");
-        logger.info("👤 User updating profile: {} (ID: {})", user.getEmail(), user.getId());
-        logger.info("📝 Update data: Name={}, Email={}, Password={}", 
-            updateDTO.getName(), 
-            updateDTO.getEmail(),
-            updateDTO.getPassword() != null ? "[PROVIDED]" : "[NOT PROVIDED]");
-        
-        try {
-            UserDTO updatedUser = userService.updateUser(user.getId(), updateDTO);
-            
-            logger.info("✅ ENDPOINT SUCCESS: PUT /api/v1/users/me - Profile updated successfully");
-            logger.info("📄 Updated user: Name={}, Email={}", updatedUser.getName(), updatedUser.getEmail());
-            
-            return ResponseEntity.ok(updatedUser);
-            
-        } catch (SecurityException e) {
-            logger.error("🚫 ENDPOINT SECURITY ERROR: PUT /api/v1/users/me - Authentication failed: {}", e.getMessage());
-            logger.error("🔍 Security details: User authentication invalid");
-            throw e;
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("Email already exists")) {
-                logger.error("📧 ENDPOINT VALIDATION ERROR: PUT /api/v1/users/me - Email conflict: {}", updateDTO.getEmail());
-                logger.error("🔍 Attempted to change to existing email: {}", updateDTO.getEmail());
-            } else if (e.getMessage().contains("User not found")) {
-                logger.error("👤 ENDPOINT NOT_FOUND ERROR: PUT /api/v1/users/me - User no longer exists");
-                logger.error("🔍 User ID {} not found in database", user.getId());
-            } else {
-                logger.error("❌ ENDPOINT RUNTIME ERROR: PUT /api/v1/users/me - Runtime error: {}", e.getMessage());
-                logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
-            }
-            throw e;
-        } catch (Exception e) {
-            logger.error("❌ ENDPOINT ERROR: PUT /api/v1/users/me - Profile update failed: {}", e.getMessage());
-            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
-            logger.error("📚 Stack trace: ", e);
-            throw e;
-        }
-    }
-
     @PutMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or @userService.isCurrentUser(#userId, authentication)")
-    @Operation(summary = "Update user", description = "Updates a user's information (requires ADMIN role or own user)")
+    @Operation(
+        summary = "Update user", 
+        description = "Updates a user's information. Admin can update any user, while regular users can only update their own profile."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data or email already exists"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Non-admin users can only update their own profile"),
+        @ApiResponse(responseCode = "404", description = "User not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long userId,
-            @RequestBody UserUpdateDTO updateDTO) {
+            @RequestBody UserUpdateDTO updateDTO,
+            Authentication authentication) {
+        
+        User currentUser = (User) authentication.getPrincipal();
+        
         logger.info("🌐 ENDPOINT CALLED: PUT /api/v1/users/{} - Update user", userId);
-        logger.info("📝 Update data for user {}: Name={}, Email={}, Password={}", 
-            userId,
+        logger.info("👤 Request by: {} (ID: {}, Role: {})", 
+            currentUser.getEmail(), 
+            currentUser.getId(), 
+            currentUser.getRole());
+        logger.info("📝 Update data: Name={}, Email={}, Password={}", 
             updateDTO.getName(), 
             updateDTO.getEmail(),
             updateDTO.getPassword() != null ? "[PROVIDED]" : "[NOT PROVIDED]");
@@ -187,7 +160,9 @@ public class UserController {
         try {
             UserDTO updatedUser = userService.updateUser(userId, updateDTO);
             
-            logger.info("✅ ENDPOINT SUCCESS: PUT /api/v1/users/{} - User updated successfully", userId);
+            boolean isSelfUpdate = currentUser.getId().equals(userId);
+            String updateType = isSelfUpdate ? "self update" : "admin update of other user";
+            logger.info("✅ ENDPOINT SUCCESS: PUT /api/v1/users/{} - User updated successfully ({})", userId, updateType);
             logger.info("📄 Updated user: Name={}, Email={}", updatedUser.getName(), updatedUser.getEmail());
             
             return ResponseEntity.ok(updatedUser);

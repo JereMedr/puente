@@ -2,6 +2,41 @@
 
 Este proyecto es un microservicio RESTful desarrollado en Java 21 con Spring Boot 3.x para gestionar datos de instrumentos financieros.
 
+## Estado Actual del Proyecto
+
+El proyecto ha completado las siguientes fases de implementación:
+
+1. ✅ Configuración Inicial
+   - Estructura del proyecto con arquitectura hexagonal
+   - Configuración de Java 21 y Spring Boot 3.x
+   - Configuración de dependencias en pom.xml
+
+2. ✅ Configuración de Docker
+   - Dockerfile y docker-compose.yml
+   - Configuración de PostgreSQL
+   - Gestión de variables de entorno
+
+3. ✅ Módulo de Usuarios
+   - Modelo de dominio y DTOs
+   - Servicios de autenticación y registro
+   - Endpoints REST con seguridad JWT
+
+4. ✅ Módulo de Instrumentos Financieros
+   - Integración con Alpha Vantage API
+   - Caché de datos financieros
+   - Endpoints para consulta de instrumentos
+
+5. ✅ Módulo de Favoritos
+   - Implementación de modelo con clave compuesta
+   - Gestión eficiente de favoritos por usuario
+   - Endpoints para agregar/eliminar/listar favoritos
+
+Próximos pasos:
+- [ ] Implementación de pruebas unitarias
+- [ ] Implementación de pruebas de integración
+- [ ] Documentación completa de la API
+- [ ] Despliegue en ambiente de producción
+
 ## Características Principales
 
 - Consumo de datos de instrumentos financieros de Alpha Vantage API
@@ -45,6 +80,16 @@ src/main/java/com/puente/financialservice/
 │   └── infrastructure/
 │       ├── persistence/
 │       └── external/               # Cliente Alpha Vantage
+├── favorite/                       # Módulo de favoritos
+│   ├── domain/
+│   │   ├── model/                  # Entidades Favorite y FavoriteId
+│   │   └── port/                   # Interfaces de repositorio
+│   ├── application/
+│   │   ├── service/                # Servicio de gestión de favoritos
+│   │   └── dto/                    # DTOs para favoritos
+│   └── infrastructure/
+│       ├── persistence/            # Implementación JPA del repositorio
+│       └── controller/             # Controlador REST
 └── common/                         # Componentes comunes
     ├── config/                     # Configuraciones globales
     └── exception/                  # Manejo de excepciones
@@ -284,29 +329,79 @@ Respuesta:
 
 ### Gestión de Favoritos
 
-#### Agregar a Favoritos
-```bash
-curl -X POST http://localhost:8080/api/v1/favorites \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "symbol": "AAPL"
-  }'
+#### Símbolos Disponibles
+Los siguientes símbolos están predefinidos en el sistema y pueden ser agregados a favoritos:
+
+```
+AAPL  - Apple Inc
+MSFT  - Microsoft Corporation
+GOOGL - Alphabet Inc
+AMZN  - Amazon.com Inc
+META  - Meta Platforms Inc
+TSLA  - Tesla Inc
+JPM   - JPMorgan Chase & Co
+V     - Visa Inc
+PG    - Procter & Gamble Co
+JNJ   - Johnson & Johnson
+WMT   - Walmart Inc
+BAC   - Bank of America Corp
+KO    - Coca-Cola Co
+DIS   - Walt Disney Co
+NFLX  - Netflix Inc
+INTC  - Intel Corporation
+VZ    - Verizon Communications Inc
+T     - AT&T Inc
+PFE   - Pfizer Inc
+MRK   - Merck & Co Inc
 ```
 
-Respuesta:
+**Nota sobre límites de API:** 
+- El sistema utiliza Alpha Vantage API que tiene un límite de 25 llamadas por día en su versión gratuita
+- Los datos de los instrumentos se actualizan en ciclos de 5 minutos, 4 símbolos por ciclo
+- Cuando se alcanza el límite diario de la API, solo se pueden agregar a favoritos los símbolos que ya tienen datos cargados
+- Los símbolos nuevos agregados como favoritos obtendrán sus datos actualizados en el próximo ciclo de actualización disponible
+
+#### Agregar Instrumento a Favoritos
+```bash
+curl -X POST http://localhost:8080/api/v1/favorites/AAPL \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Respuesta (200 OK):
 ```json
 {
-  "id": 1,
   "symbol": "AAPL",
-  "name": "Apple Inc.",
-  "type": "STOCK",
-  "currency": "USD",
-  "price": 150.25
+  "createdAt": "2024-03-19T10:30:00"
 }
 ```
 
-#### Listar Favoritos
+Respuestas de Error:
+```json
+// 400 Bad Request - Símbolo no válido
+{
+  "error": "Invalid financial instrument symbol - not in predefined list",
+  "status": 400
+}
+
+// 400 Bad Request - Ya está en favoritos
+{
+  "error": "Symbol is already in favorites",
+  "status": 400
+}
+```
+
+#### Eliminar Instrumento de Favoritos
+```bash
+curl -X DELETE http://localhost:8080/api/v1/favorites/AAPL \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Respuesta (200 OK):
+```json
+{}
+```
+
+#### Listar Favoritos del Usuario
 ```bash
 curl -X GET http://localhost:8080/api/v1/favorites \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
@@ -314,30 +409,25 @@ curl -X GET http://localhost:8080/api/v1/favorites \
 
 Respuesta:
 ```json
-{
-  "content": [
-    {
-      "id": 1,
-      "symbol": "AAPL",
-      "name": "Apple Inc.",
-      "type": "STOCK",
-      "currency": "USD",
-      "price": 150.25
-    }
-  ],
-  "pageable": {
-    "pageNumber": 0,
-    "pageSize": 10
+[
+  {
+    "symbol": "AAPL",
+    "createdAt": "2024-03-19T10:30:00"
   },
-  "totalElements": 1
-}
+  {
+    "symbol": "GOOGL",
+    "createdAt": "2024-03-19T11:15:00"
+  }
+]
 ```
 
-#### Eliminar de Favoritos
-```bash
-curl -X DELETE http://localhost:8080/api/v1/favorites/AAPL \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
+### Notas sobre Favoritos
+
+- Los favoritos son específicos para cada usuario autenticado
+- La operación de agregar verifica que el símbolo exista en el sistema
+- No es necesario llamar a la API externa al listar favoritos
+- Las operaciones son atómicas y manejan concurrencia
+- Se implementa caché para optimizar el rendimiento
 
 ### Notas Importantes
 

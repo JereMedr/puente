@@ -1,9 +1,7 @@
 package com.puente.financialservice.financialinstrument.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,14 +9,24 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@Entity
-@Table(name = "financial_instruments")
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class FinancialInstrument {
-    @Id
+    // Campos de identificación básica
     private String symbol;
     private String name;
+    
+    // Campos de información de mercado
+    private String type;
+    private String region;
+    private String marketOpen;
+    private String marketClose;
+    private String timezone;
+    private String currency;
+    private Double matchScore;
+    
+    // Campos de precio y cambios
     private BigDecimal currentPrice;
     private BigDecimal previousClose;
     private BigDecimal change;

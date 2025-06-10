@@ -23,30 +23,44 @@ public class FinancialInstrumentMapper {
         }
 
         try {
-            return new FinancialInstrument(
-                symbol,
-                companyNameService.getCompanyName(symbol),
-                parseToDecimal(quote.getPrice()),
-                parseToDecimal(quote.getPreviousClose()),
-                parseToDecimal(quote.getChange()),
-                parseToDecimal(quote.getChangePercent().replace("%", "")),
-                LocalDateTime.now()
-            );
+            return FinancialInstrument.builder()
+                .symbol(symbol)
+                .name(companyNameService.getCompanyName(symbol))
+                .type("EQUITY")
+                .region("US")
+                .marketOpen("09:30")
+                .marketClose("16:00")
+                .timezone("America/New_York")
+                .currency("USD")
+                .matchScore(1.0)
+                .currentPrice(parseToDecimal(quote.getPrice()))
+                .previousClose(parseToDecimal(quote.getPreviousClose()))
+                .change(parseToDecimal(quote.getChange()))
+                .changePercent(parseToDecimal(quote.getChangePercent().replace("%", "")))
+                .lastUpdated(LocalDateTime.now())
+                .build();
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Error parsing numeric values for symbol " + symbol, e);
         }
     }
 
     public FinancialInstrument createEmptyInstrument(String symbol) {
-        return new FinancialInstrument(
-            symbol,
-            companyNameService.getCompanyName(symbol),
-            BigDecimal.ZERO,
-            BigDecimal.ZERO,
-            BigDecimal.ZERO,
-            BigDecimal.ZERO,
-            LocalDateTime.now()
-        );
+        return FinancialInstrument.builder()
+            .symbol(symbol)
+            .name(companyNameService.getCompanyName(symbol))
+            .type("EQUITY")
+            .region("US")
+            .marketOpen("09:30")
+            .marketClose("16:00")
+            .timezone("America/New_York")
+            .currency("USD")
+            .matchScore(1.0)
+            .currentPrice(BigDecimal.ZERO)
+            .previousClose(BigDecimal.ZERO)
+            .change(BigDecimal.ZERO)
+            .changePercent(BigDecimal.ZERO)
+            .lastUpdated(LocalDateTime.now())
+            .build();
     }
 
     private BigDecimal parseToDecimal(String value) {

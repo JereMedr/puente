@@ -55,14 +55,21 @@ public class AlphaVantageFinancialInstrumentAdapter implements FinancialInstrume
     }
 
     private FinancialInstrument mapToFinancialInstrument(String symbol, GlobalQuote quote) {
-        return new FinancialInstrument(
-            symbol,
-            symbol, // En una implementación real, obtendríamos el nombre de otro endpoint
-            new BigDecimal(quote.getPrice()),
-            new BigDecimal(quote.getPreviousClose()),
-            new BigDecimal(quote.getChange()),
-            new BigDecimal(quote.getChangePercent().replace("%", "")),
-            LocalDateTime.now()
-        );
+        return FinancialInstrument.builder()
+            .symbol(symbol)
+            .name(symbol) // En una implementación real, obtendríamos el nombre de otro endpoint
+            .type("EQUITY")
+            .region("US")
+            .marketOpen("09:30")
+            .marketClose("16:00")
+            .timezone("America/New_York")
+            .currency("USD")
+            .matchScore(1.0)
+            .currentPrice(new BigDecimal(quote.getPrice()))
+            .previousClose(new BigDecimal(quote.getPreviousClose()))
+            .change(new BigDecimal(quote.getChange()))
+            .changePercent(new BigDecimal(quote.getChangePercent().replace("%", "")))
+            .lastUpdated(LocalDateTime.now())
+            .build();
     }
 } 

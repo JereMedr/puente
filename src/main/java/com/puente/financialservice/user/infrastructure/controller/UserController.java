@@ -240,45 +240,57 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/me")
-    @Operation(summary = "Delete current user", description = "Deletes the current user's account")
-    public ResponseEntity<Void> deleteCurrentUser(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
-        
-        logger.info("🌐 ENDPOINT CALLED: DELETE /api/v1/users/me - Delete current user account");
-        logger.info("⚠️  Self-deletion request from: {} (ID: {})", user.getEmail(), user.getId());
-        
-        try {
-            userService.deleteUser(user.getId());
-            
-            logger.info("✅ ENDPOINT SUCCESS: DELETE /api/v1/users/me - Account deleted successfully");
-            logger.info("🗑️  User account deleted: {} (ID: {})", user.getEmail(), user.getId());
-            
-            return ResponseEntity.noContent().build();
-            
-        } catch (Exception e) {
-            logger.error("❌ ENDPOINT ERROR: DELETE /api/v1/users/me - Failed to delete account: {}", e.getMessage());
-            throw e;
-        }
-    }
-
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete user", description = "Deletes a user (requires ADMIN role)")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
-        logger.info("🌐 ENDPOINT CALLED: DELETE /api/v1/users/{} - Delete user (ADMIN only)", userId);
-        logger.info("⚠️  ADMIN deletion request for user ID: {}", userId);
+    @PreAuthorize("hasRole('ADMIN') or @userService.isCurrentUser(#userId, authentication)")
+    @Operation(
+        summary = "Delete user", 
+        description = "Deletes a user account. Admin can delete any user, while regular users can only delete their own account."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "User deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Non-admin users can only delete their own account"),
+        @ApiResponse(responseCode = "404", description = "User not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<Void> deleteUser(
+            @PathVariable Long userId,
+            Authentication authentication) {
+        
+        User currentUser = (User) authentication.getPrincipal();
+        
+        logger.info("🌐 ENDPOINT CALLED: DELETE /api/v1/users/{} - Delete user", userId);
+        logger.info("👤 Request by: {} (ID: {}, Role: {})", 
+            currentUser.getEmail(), 
+            currentUser.getId(), 
+            currentUser.getRole());
         
         try {
             userService.deleteUser(userId);
             
-            logger.info("✅ ENDPOINT SUCCESS: DELETE /api/v1/users/{} - User deleted successfully", userId);
-            logger.info("🗑️  User deleted by ADMIN: ID {}", userId);
+            boolean isSelfDelete = currentUser.getId().equals(userId);
+            String deleteType = isSelfDelete ? "self deletion" : "admin deletion of other user";
+            logger.info("✅ ENDPOINT SUCCESS: DELETE /api/v1/users/{} - User deleted successfully ({})", userId, deleteType);
+            logger.info("🗑️  User account deleted by: {} ({})", currentUser.getEmail(), deleteType);
             
             return ResponseEntity.noContent().build();
             
+        } catch (SecurityException e) {
+            logger.error("🚫 ENDPOINT SECURITY ERROR: DELETE /api/v1/users/{} - Access denied: {}", userId, e.getMessage());
+            logger.error("🔍 Security details: User might not have permission to delete user {}", userId);
+            throw e;
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("User not found")) {
+                logger.error("👤 ENDPOINT NOT_FOUND ERROR: DELETE /api/v1/users/{} - User does not exist", userId);
+                logger.error("🔍 Database search failed for user ID: {}", userId);
+            } else {
+                logger.error("❌ ENDPOINT RUNTIME ERROR: DELETE /api/v1/users/{} - Runtime error: {}", userId, e.getMessage());
+                logger.error("🔍 Runtime error type: {}", e.getClass().getSimpleName());
+            }
+            throw e;
         } catch (Exception e) {
-            logger.error("❌ ENDPOINT ERROR: DELETE /api/v1/users/{} - Failed to delete user: {}", userId, e.getMessage());
+            logger.error("❌ ENDPOINT ERROR: DELETE /api/v1/users/{} - Delete failed: {}", userId, e.getMessage());
+            logger.error("🔍 Error type: {}", e.getClass().getSimpleName());
+            logger.error("📚 Stack trace: ", e);
             throw e;
         }
     }

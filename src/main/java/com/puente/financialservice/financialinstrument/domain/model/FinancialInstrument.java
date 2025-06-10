@@ -1,4 +1,4 @@
-package com.puente.financialservice.financialinstrument.domain;
+package com.puente.financialservice.financialinstrument.domain.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

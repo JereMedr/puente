@@ -1,6 +1,6 @@
 package com.puente.financialservice.config;
 
-import com.puente.financialservice.financialinstrument.domain.FinancialInstrument;
+import com.puente.financialservice.financialinstrument.domain.model.FinancialInstrument;
 import com.puente.financialservice.financialinstrument.domain.port.FinancialInstrumentExternalService;
 import com.puente.financialservice.financialinstrument.infrastructure.dto.AlphaVantageResponse;
 import com.puente.financialservice.financialinstrument.infrastructure.dto.GlobalQuote;

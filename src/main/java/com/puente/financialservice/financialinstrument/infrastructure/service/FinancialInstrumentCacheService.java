@@ -1,6 +1,6 @@
 package com.puente.financialservice.financialinstrument.infrastructure.service;
 
-import com.puente.financialservice.financialinstrument.domain.FinancialInstrument;
+import com.puente.financialservice.financialinstrument.domain.model.FinancialInstrument;
 import com.puente.financialservice.financialinstrument.infrastructure.mapper.FinancialInstrumentMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

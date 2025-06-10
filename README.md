@@ -1,449 +1,151 @@
-# Financial Service - Backend Challenge
+# Financial Service
 
-Este proyecto es un microservicio RESTful desarrollado en Java 21 con Spring Boot 3.x para gestionar datos de instrumentos financieros.
+## Repositorio
+https://github.com/JereMedr/puente.git
 
-## Estado Actual del Proyecto
+## Descripción
+Servicio financiero que proporciona información en tiempo real sobre instrumentos financieros, con capacidades de autenticación de usuarios y gestión de favoritos.
 
-El proyecto ha completado las siguientes fases de implementación:
-
-1. ✅ Configuración Inicial
-   - Estructura del proyecto con arquitectura hexagonal
-   - Configuración de Java 21 y Spring Boot 3.x
-   - Configuración de dependencias en pom.xml
-
-2. ✅ Configuración de Docker
-   - Dockerfile y docker-compose.yml
-   - Configuración de PostgreSQL
-   - Gestión de variables de entorno
-
-3. ✅ Módulo de Usuarios
-   - Modelo de dominio y DTOs
-   - Servicios de autenticación y registro
-   - Endpoints REST con seguridad JWT
-
-4. ✅ Módulo de Instrumentos Financieros
-   - Integración con Alpha Vantage API
-   - Caché de datos financieros
-   - Endpoints para consulta de instrumentos
-
-5. ✅ Módulo de Favoritos
-   - Implementación de modelo con clave compuesta
-   - Gestión eficiente de favoritos por usuario
-   - Endpoints para agregar/eliminar/listar favoritos
-
-Próximos pasos:
-- [ ] Implementación de pruebas unitarias
-- [ ] Implementación de pruebas de integración
-- [ ] Documentación completa de la API
-- [ ] Despliegue en ambiente de producción
-
-## Características Principales
-
-- Consumo de datos de instrumentos financieros de Alpha Vantage API
-- Gestión de usuarios con autenticación JWT
-- Sistema de favoritos para instrumentos financieros
-- Arquitectura hexagonal (ports and adapters)
-- Docker y Docker Compose para containerización
-- Pruebas unitarias y de integración
-- Caché para optimización de rendimiento
-- Manejo seguro de contraseñas con BCrypt
+## Notas Importantes
+- El archivo `.env` ha sido incluido intencionalmente en el repositorio para facilitar las pruebas y la evaluación del código.
+- Se ha implementado un sistema extensivo de logging como decisión de diseño para facilitar el debugging durante las pruebas en vivo.
+- No es necesario crear la base de datos manualmente, la aplicación maneja esto automáticamente.
+- Se incluye una API key de Alpha Vantage para pruebas básicas. Para pruebas más extensivas, se recomienda obtener una API key propia en: https://www.alphavantage.co/support/#api-key
 
 ## Requisitos Previos
-
 - Java 21
-- Maven
-- Docker y Docker Compose
-- API Key de Alpha Vantage (opcional para desarrollo)
-- PostgreSQL (si se ejecuta localmente sin Docker)
+- Maven 3.8+
+- API Key de Alpha Vantage
 
-## Estructura del Proyecto
+## Instalación y Configuración
 
-```
-src/main/java/com/puente/financialservice/
-├── user/                           # Módulo de usuarios
-│   ├── domain/                     # Capa de dominio
-│   │   ├── model/                  # Entidades del dominio
-│   │   └── port/                   # Puertos (interfaces)
-│   ├── application/                # Capa de aplicación
-│   │   ├── service/                # Servicios de aplicación
-│   │   └── dto/                    # Objetos de transferencia de datos
-│   └── infrastructure/             # Capa de infraestructura
-│       ├── persistence/            # Implementaciones de repositorios
-│       └── security/               # Configuración de seguridad
-├── financialinstrument/            # Módulo de instrumentos financieros
-│   ├── domain/
-│   │   ├── model/
-│   │   └── port/
-│   ├── application/
-│   │   ├── service/
-│   │   └── dto/
-│   └── infrastructure/
-│       ├── persistence/
-│       └── external/               # Cliente Alpha Vantage
-├── favorite/                       # Módulo de favoritos
-│   ├── domain/
-│   │   ├── model/                  # Entidades Favorite y FavoriteId
-│   │   └── port/                   # Interfaces de repositorio
-│   ├── application/
-│   │   ├── service/                # Servicio de gestión de favoritos
-│   │   └── dto/                    # DTOs para favoritos
-│   └── infrastructure/
-│       ├── persistence/            # Implementación JPA del repositorio
-│       └── controller/             # Controlador REST
-└── common/                         # Componentes comunes
-    ├── config/                     # Configuraciones globales
-    └── exception/                  # Manejo de excepciones
-```
-
-## Configuración del Entorno
-
-1. Clona el repositorio:
+### 1. Clonar el Repositorio
 ```bash
 git clone https://github.com/JereMedr/puente.git
-cd financial-service
+cd financialservice
 ```
 
-2. Configura las variables de entorno:
-   - Copia el archivo `.env.example` a `.env`
-   - Ajusta los valores según tu entorno:
-     ```
-     DB_HOST=localhost
-     DB_PORT=5432
-     DB_NAME=financialservice
-     DB_USER=postgres
-     DB_PASSWORD=postgres
-     ALPHA_VANTAGE_API_KEY=your_api_key
-     JWT_SECRET=your_jwt_secret
-     ```
+### 2. Variables de Entorno
+El archivo `.env` ya está incluido con la configuración necesaria para ejecutar el proyecto:
+```properties
+ALPHA_VANTAGE_API_KEY=your_api_key  # Se provee una key, pero puedes usar tu propia key de https://www.alphavantage.co/
+POSTGRES_URL=jdbc:postgresql://localhost:5432/financialdb
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+JWT_SECRET=your_jwt_secret
+```
 
-3. Construye el proyecto:
+Nota sobre Alpha Vantage API:
+- La key proporcionada tiene el límite gratuito de 25 llamadas/día
+- Para pruebas más extensivas, puedes obtener tu propia key gratuita en https://www.alphavantage.co/support/#api-key
+- Simplemente reemplaza el valor de ALPHA_VANTAGE_API_KEY en el archivo `.env` con tu nueva key
+
+### 3. Compilar el Proyecto
 ```bash
-./mvnw clean package
+mvn clean package
 ```
 
-## Ejecución con Docker
-
-1. Construye y levanta los contenedores:
+### 4. Ejecutar con Docker Compose
 ```bash
 docker-compose up --build
 ```
 
-2. Para detener los contenedores:
+Este comando:
+- Construye las imágenes necesarias
+- Inicia todos los servicios definidos
+- Configura la red entre los contenedores
+- Maneja las dependencias entre servicios
+
+Para detener la aplicación:
 ```bash
 docker-compose down
 ```
 
-3. Para ver los logs:
+### 5. Inspeccionar la Base de Datos
+Para acceder a la base de datos PostgreSQL y examinar su estructura:
+
 ```bash
-docker-compose logs -f
+# Conectarse a la base de datos
+docker exec -it financialservice-db-1 psql -U postgres -d financialservice
+
+# Comandos útiles dentro de PostgreSQL:
+\dt        # Listar todas las tablas
+\d+ TABLA  # Describir estructura de una tabla específica
+\q         # Salir del cliente psql
 ```
 
-4. Para ejecutar en modo detached:
-```bash
-docker-compose up -d
-```
+## Arquitectura
+La aplicación implementa una arquitectura hexagonal (ports and adapters), permitiendo una clara separación de responsabilidades y facilitando el mantenimiento y testing del código.
 
-## Ejecución Local (sin Docker)
+### Componentes Principales
+- **Controllers**: Manejo de endpoints REST y DTOs
+- **Services**: Lógica de negocio y mappers
+- **Domain**: Entidades y ports
+- **Infrastructure**: Repositories, seguridad, servicios externos y caché
 
-1. Asegúrate de tener PostgreSQL instalado y corriendo
-2. Configura las variables de entorno en el archivo `.env`
-3. Ejecuta la aplicación:
-```bash
-./mvnw spring-boot:run
-```
+## Sistema de Logging
+Se ha implementado un sistema extensivo de logging que incluye:
+- Logging detallado de todas las operaciones
+- Trazabilidad de requests y responses
+- Logging de errores y excepciones
+- Monitoreo de llamadas a la API externa
+- Logging de operaciones de caché
+- Logging de operaciones de base de datos
 
-## Ejecución de Pruebas
+## Decisiones Técnicas
 
-1. Ejecutar todas las pruebas:
-```bash
-./mvnw test
-```
+### 1. Sistema de Caché
+- **Decisión**: Implementación de caché en memoria con ConcurrentHashMap.
+- **Justificación**: 
+  - Límites de la API de Alpha Vantage (25 llamadas/día en plan gratuito)
+  - Necesidad de respuesta rápida
+- **Beneficios**:
+  - Reducción de llamadas a la API externa
+  - Mejor tiempo de respuesta
+  - Control sobre la actualización de datos
 
-2. Ejecutar pruebas con cobertura:
-```bash
-./mvnw verify
-```
+### 2. Seguridad
+- **Decisión**: Implementación de JWT para autenticación.
+- **Justificación**: 
+  - Necesidad de stateless authentication
+  - Soporte para microservicios
+- **Beneficios**:
+  - Escalabilidad
+  - No requiere estado en servidor
+  - Fácil integración con otros servicios
 
-3. Ver el reporte de cobertura:
-   - Abre `target/site/jacoco/index.html` en tu navegador
+### 3. Persistencia
+- **Decisión**: PostgreSQL con JPA/Hibernate.
+- **Justificación**:
+  - Necesidad de persistencia relacional
+  - Soporte para transacciones
+- **Beneficios**:
+  - ACID compliance
+  - Buen soporte para relaciones
+  - Herramientas maduras
 
-## Endpoints Disponibles
 
-### Usuarios
-- POST /api/users/register - Registro de usuarios
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password123",
-    "name": "John Doe"
-  }
-  ```
-- POST /api/users/login - Login y generación de JWT
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password123"
-  }
-  ```
-- GET /api/users/profile - Consulta de perfil propio
-- PUT /api/users/profile - Actualización de perfil
 
-### Instrumentos Financieros
-- GET /api/instruments - Lista de instrumentos predefinidos
-- GET /api/instruments/{symbol} - Detalles de un instrumento
-- POST /api/favorites/{symbol} - Marcar como favorito
-- DELETE /api/favorites/{symbol} - Eliminar de favoritos
-- GET /api/favorites - Listar favoritos del usuario
+## Documentación API con Swagger
+La aplicación incluye Swagger UI para facilitar la prueba y documentación de los endpoints. Para acceder a la interfaz de Swagger:
 
-## Seguridad
+1. Inicia la aplicación
+2. Abre en tu navegador: `http://localhost:8080/swagger-ui.html`
 
-- Autenticación basada en JWT
-- Contraseñas hasheadas con BCrypt
-- Endpoints protegidos con Spring Security
-- Validación de datos de entrada
-- Manejo seguro de errores
+Beneficios de usar Swagger UI:
+- Interfaz interactiva para probar todos los endpoints
+- Documentación detallada de request/response schemas
+- No requiere Postman u otras herramientas externas
+- Facilita la demostración y prueba en vivo del API
+- Incluye campos de autorización para probar endpoints protegidos
 
-## Notas de Desarrollo
+## Testing
+La aplicación incluye:
+- Tests unitarios para componentes clave
+- Tests de integración para controllers y repositorios
+- Tests de servicios externos
 
-- La aplicación usa una API key de demostración de Alpha Vantage por defecto
-- Los datos se actualizan cada 5 minutos
-- Se implementa caché para optimizar el consumo de la API externa
-- Las pruebas usan una base de datos H2 en memoria
-- El proyecto sigue los principios SOLID y Clean Architecture
-
-## Tecnologías Utilizadas
-
-- Java 21
-- Spring Boot 3.x
-- Spring Security + JWT
-- PostgreSQL
-- Docker + Docker Compose
-- Maven
-- Lombok
-- JUnit 5
-- Mockito
-- JaCoCo (cobertura de código)
-- H2 Database (pruebas)
-
-## Contribución
-
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## API Documentation
-
-### Authentication
-
-La API utiliza autenticación JWT. Para obtener un token, primero debes registrarte y luego iniciar sesión.
-
-#### Registro de Usuario
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "password": "securePassword123"
-  }'
-```
-
-Respuesta:
-```json
-{
-  "id": 1,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "role": "USER"
-}
-```
-
-#### Inicio de Sesión
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john@example.com",
-    "password": "securePassword123"
-  }'
-```
-
-Respuesta:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "type": "Bearer"
-}
-```
-
-### Instrumentos Financieros
-
-#### Obtener Lista de Instrumentos
-```bash
-curl -X GET http://localhost:8080/api/v1/instruments \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-Respuesta:
-```json
-{
-  "content": [
-    {
-      "symbol": "AAPL",
-      "name": "Apple Inc.",
-      "type": "STOCK",
-      "currency": "USD",
-      "price": 150.25
-    }
-  ],
-  "pageable": {
-    "pageNumber": 0,
-    "pageSize": 10
-  },
-  "totalElements": 1
-}
-```
-
-#### Buscar Instrumento por Símbolo
-```bash
-curl -X GET http://localhost:8080/api/v1/instruments/AAPL \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-Respuesta:
-```json
-{
-  "symbol": "AAPL",
-  "name": "Apple Inc.",
-  "type": "STOCK",
-  "currency": "USD",
-  "price": 150.25
-}
-```
-
-### Gestión de Favoritos
-
-#### Símbolos Disponibles
-Los siguientes símbolos están predefinidos en el sistema y pueden ser agregados a favoritos:
-
-```
-AAPL  - Apple Inc
-MSFT  - Microsoft Corporation
-GOOGL - Alphabet Inc
-AMZN  - Amazon.com Inc
-META  - Meta Platforms Inc
-TSLA  - Tesla Inc
-JPM   - JPMorgan Chase & Co
-V     - Visa Inc
-PG    - Procter & Gamble Co
-JNJ   - Johnson & Johnson
-WMT   - Walmart Inc
-BAC   - Bank of America Corp
-KO    - Coca-Cola Co
-DIS   - Walt Disney Co
-NFLX  - Netflix Inc
-INTC  - Intel Corporation
-VZ    - Verizon Communications Inc
-T     - AT&T Inc
-PFE   - Pfizer Inc
-MRK   - Merck & Co Inc
-```
-
-**Nota sobre límites de API:** 
-- El sistema utiliza Alpha Vantage API que tiene un límite de 25 llamadas por día en su versión gratuita
-- Los datos de los instrumentos se actualizan en ciclos de 5 minutos, 4 símbolos por ciclo
-- Cuando se alcanza el límite diario de la API, solo se pueden agregar a favoritos los símbolos que ya tienen datos cargados
-- Los símbolos nuevos agregados como favoritos obtendrán sus datos actualizados en el próximo ciclo de actualización disponible
-
-#### Agregar Instrumento a Favoritos
-```bash
-curl -X POST http://localhost:8080/api/v1/favorites/AAPL \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-Respuesta (200 OK):
-```json
-{
-  "symbol": "AAPL",
-  "createdAt": "2024-03-19T10:30:00"
-}
-```
-
-Respuestas de Error:
-```json
-// 400 Bad Request - Símbolo no válido
-{
-  "error": "Invalid financial instrument symbol - not in predefined list",
-  "status": 400
-}
-
-// 400 Bad Request - Ya está en favoritos
-{
-  "error": "Symbol is already in favorites",
-  "status": 400
-}
-```
-
-#### Eliminar Instrumento de Favoritos
-```bash
-curl -X DELETE http://localhost:8080/api/v1/favorites/AAPL \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-Respuesta (200 OK):
-```json
-{}
-```
-
-#### Listar Favoritos del Usuario
-```bash
-curl -X GET http://localhost:8080/api/v1/favorites \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-Respuesta:
-```json
-[
-  {
-    "symbol": "AAPL",
-    "createdAt": "2024-03-19T10:30:00"
-  },
-  {
-    "symbol": "GOOGL",
-    "createdAt": "2024-03-19T11:15:00"
-  }
-]
-```
-
-### Notas sobre Favoritos
-
-- Los favoritos son específicos para cada usuario autenticado
-- La operación de agregar verifica que el símbolo exista en el sistema
-- No es necesario llamar a la API externa al listar favoritos
-- Las operaciones son atómicas y manejan concurrencia
-- Se implementa caché para optimizar el rendimiento
-
-### Notas Importantes
-
-1. **Autenticación**: Todas las peticiones (excepto registro y login) requieren el token JWT en el header `Authorization: Bearer YOUR_JWT_TOKEN`
-
-2. **Paginación**: Las listas de instrumentos y favoritos soportan paginación con los siguientes parámetros:
-   - `page`: Número de página (comienza en 0)
-   - `size`: Tamaño de la página
-   - `sort`: Campo por el cual ordenar
-
-   Ejemplo:
-   ```bash
-   curl -X GET "http://localhost:8080/api/v1/instruments?page=0&size=20&sort=symbol,asc" \
-     -H "Authorization: Bearer YOUR_JWT_TOKEN"
-   ```
-
-3. **Caché**: Las consultas de instrumentos financieros están cacheadas por 5 minutos para optimizar el rendimiento.
-
-4. **Límites de API**: La integración con Alpha Vantage tiene un límite de 5 llamadas por minuto y 500 por día en el plan gratuito. 
+## Limitaciones Conocidas
+1. Límite de llamadas a Alpha Vantage API (25/día en plan gratuito)
+2. Caché en memoria (se pierde al reiniciar)
+3. Sin soporte para websockets (datos no en tiempo real) 
